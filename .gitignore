@@ -4,7 +4,7 @@ junk/
 .*svg
 .*png
 .*gitignore
-.*__pycache__
+__pycache_/_
 GAIA_ML_RUNS
 gifs/
 trained_networks/
