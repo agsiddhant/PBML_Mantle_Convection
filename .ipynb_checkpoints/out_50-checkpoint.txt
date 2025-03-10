@@ -1,0 +1,115 @@
+Body force modules: 1
+Loading grid from file ./box2_126_AR4.grid ...
+Grid ID: BOX2GRID_B04
+Inner radius: 4.000000 Outer radius: 1.000000 Resolution: 0.007937 Shells: 128 Type: BOX/2D
+Simulation has 64768 nodes.
+Reading 64135 Voronoi vertices...
+Reading 64768 volumes & surface areas...
+Reading 128270 tetrahedra...
+Reading 128270 faces... 
+min_res  = 0.007937 mean_res  = 0.007937 max_res  = 0.007937
+min_area = 0.007937 mean_area = 0.007897 max_area = 0.007937
+Delaunay mapping...
+Weights...
+Found 0 degenerated walls. (0.000%)
+--> BOX: Layers: 128 W: 4 L: 1 H: 0
+Creating cell structure... 
+Simulation::Init()
+UseWeights: auto -> no
+Ra: 1.000000 RaQ: 0.526931 RaQT: 0.000000 
+Calling 3 init modules.
+Calling Module "Box/Init"
+Box/Reg init: found 252 side-wall cells. grid_sph=0
+Calling Module "InitSphHarmonics/"
+Calling Module "LineOut/Init"
+LineOut creates PX_LO_ML_STOKES.txt with 5 columns.
+Calling Module "FKViscosity/"
+MatSetup (64768x194304, 702336) took 0.045973 seconds.
+VISCOSITY: grad(ln visc) mag_min: 0.0241211 mag_max: 15.895 min: 4.04609e-08 max: 0.988973 Contrast: 2.44427e+07 Limit at: 4.04609e+12
+Writing ./PX_OUT_ML_STOKES_0 
+Writing ./PX_OUT_ML_STOKES_0 done.
+Area from cells: 4 Analytical: 4
+Init complete
+Calling Module "Boussinesq/"
+MatSetup (64768x64768, 318532) took 0.051326 seconds.
+BiCGStab Solver started: B-Norm = 2.52002e+09; R-Norm = 713762
+ iter  0: res = 1.21361e-09
+ iter  1: res = 1.63324e-14
+E iterations: 2
+Calling Module "FKViscosity/"
+VISCOSITY: grad(ln visc) mag_min: 0.0351092 mag_max: 15.8245 min: 4.12849e-08 max: 0.988973 Contrast: 2.39548e+07 Limit at: 4.12849e+12
+MatSetup (259072x259072, 2989731) took 0.341957 seconds.
+MUMPS calculated RTOL = 3.78673e-15
+MatSetup (194304x64768, 956352) took 0.078256 seconds.
+MMO: DIV: sum = 0.000000 mean = 0.000000 norm = 0.000000 Solver its: 1
+VRes: 1592.953613 TRes: 0.071037 OIter: 1 scaled t: 0.000000 scaled dt: 0.000000 urf_mm: 1.000000
+Calling Module "SteadyState/"
+Calling Module "LineOut/"
+-----------------------------------------------------------------------------------------------------------------------------------
+TS: 0 OIts: 1 SIts: 1 VR= 1 VC= 2.39548e+07 |V|= 6.32124 |T|= 0.999979 t= 1e-07 dt= 1e-07 [TS time: 91.76s MPI: 0.0%]
+-----------------------------------------------------------------------------------------------------------------------------------
+Performance MatMul (1 FLOP = mul + add) = 1.02671:0 GFlop/s (no MPI : with MPI), Memory bandwidth (no MPI, 2x dbl + 1x int / FLOP)) = 19583 MByte/s
+Performance Dot (1 FLOP = mul) = 129536 GFlop/s, Memory bandwidth (2x dbl / FLOP)) = 1.97656e+09 MByte/s
+mean_strain_rate: 40.8791 max_strain_rate: 219.62 cut: 0 urf_strain: 1
+Calling Module "Boussinesq/"
+MatSetup (64768x64768, 318532) took 0.006982 seconds.
+BiCGStab Solver started: B-Norm = 2.09992e+09; R-Norm = 1.18397e+06
+ iter  0: res = 3.51587e-09
+ iter  1: res = 6.88184e-14
+E iterations: 2
+Calling Module "FKViscosity/"
+VISCOSITY: grad(ln visc) mag_min: 0.0270457 mag_max: 15.6831 min: 4.1301e-08 max: 0.988973 Contrast: 2.39455e+07 Limit at: 4.1301e+12
+MatSetup (259072x259072, 2989731) took 0.083079 seconds.
+MUMPS calculated RTOL = 3.75338e-15
+MMO: DIV: sum = 0.000000 mean = 0.000000 norm = 0.000000 Solver its: 1
+VRes: 3.368620 TRes: 0.141268 OIter: 1 scaled t: 0.000000 scaled dt: 0.000000 urf_mm: 1.000000
+Calling Module "SteadyState/"
+Calling Module "LineOut/"
+-----------------------------------------------------------------------------------------------------------------------------------
+TS: 1 OIts: 1 SIts: 1 VR= 1 VC= 2.39455e+07 |V|= 6.31241 |T|= 0.999929 t= 3e-07 dt= 2e-07 [TS time: 98.87s MPI: 0.0%]
+-----------------------------------------------------------------------------------------------------------------------------------
+mean_strain_rate: 40.7847 max_strain_rate: 219.129 cut: 0 urf_strain: 1
+Calling Module "Boussinesq/"
+MatSetup (64768x64768, 318532) took 0.006990 seconds.
+BiCGStab Solver started: B-Norm = 1.04989e+09; R-Norm = 1.17455e+06
+ iter  0: res = 2.75779e-08
+ iter  1: res = 2.12376e-12
+E iterations: 2
+Calling Module "FKViscosity/"
+VISCOSITY: grad(ln visc) mag_min: 0.0328781 mag_max: 22.1528 min: 4.13721e-08 max: 0.988973 Contrast: 2.39044e+07 Limit at: 4.13721e+12
+MatSetup (259072x259072, 2989731) took 0.083555 seconds.
+MUMPS calculated RTOL = 3.79274e-15
+MMO: DIV: sum = 0.000000 mean = 0.000000 norm = 0.000000 Solver its: 1
+VRes: 7.322590 TRes: 0.278712 OIter: 1 scaled t: 0.000001 scaled dt: 0.000000 urf_mm: 1.000000
+Calling Module "SteadyState/"
+Calling Module "LineOut/"
+-----------------------------------------------------------------------------------------------------------------------------------
+TS: 2 OIts: 1 SIts: 1 VR= 1 VC= 2.39044e+07 |V|= 6.29295 |T|= 0.99983 t= 7e-07 dt= 4e-07 [TS time: 100.30s MPI: 0.0%]
+-----------------------------------------------------------------------------------------------------------------------------------
+mean_strain_rate: 40.5943 max_strain_rate: 218.14 cut: 0 urf_strain: 1
+Calling Module "Boussinesq/"
+MatSetup (64768x64768, 318532) took 0.010176 seconds.
+BiCGStab Solver started: B-Norm = 5.24872e+08; R-Norm = 1.15493e+06
+ iter  0: res = 2.11631e-07
+ iter  1: res = 6.3119e-11
+E iterations: 2
+Calling Module "FKViscosity/"
+VISCOSITY: grad(ln visc) mag_min: 0.0335983 mag_max: 47.558 min: 4.1672e-08 max: 0.988973 Contrast: 2.37323e+07 Limit at: 4.1672e+12
+MatSetup (259072x259072, 2989731) took 0.082555 seconds.
+MUMPS calculated RTOL = 3.82881e-15
+MMO: DIV: sum = -0.000000 mean = 0.000000 norm = 0.000000 Solver its: 1
+VRes: 17.338165 TRes: 0.542075 OIter: 1 scaled t: 0.000002 scaled dt: 0.000001 urf_mm: 1.000000
+Calling Module "SteadyState/"
+Calling Module "LineOut/"
+-----------------------------------------------------------------------------------------------------------------------------------
+TS: 3 OIts: 1 SIts: 1 VR= 1 VC= 2.37323e+07 |V|= 6.2465 |T|= 0.999636 t= 1.5e-06 dt= 8e-07 [TS time: 97.21s MPI: 0.0%]
+-----------------------------------------------------------------------------------------------------------------------------------
+mean_strain_rate: 40.207 max_strain_rate: 216.154 cut: 0 urf_strain: 1
+Calling Module "Boussinesq/"
+MatSetup (64768x64768, 318532) took 0.007104 seconds.
+BiCGStab Solver started: B-Norm = 2.62368e+08; R-Norm = 1.11656e+06
+ iter  0: res = 1.55886e-06
+ iter  1: res = 1.74805e-09
+ iter  2: res = 3.1723e-12
+E iterations: 3
+Calling Module "FKViscosity/"

@@ -1,0 +1,8 @@
+junk/
+.*gif
+.*pdf
+.*svg
+.*png
+GAIA_ML_RUNS/
+gifs/
+trained_networks/
