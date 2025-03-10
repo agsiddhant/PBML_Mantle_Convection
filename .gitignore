@@ -3,6 +3,8 @@ junk/
 .*pdf
 .*svg
 .*png
+.*gitignore
+.*__pycache__
 GAIA_ML_RUNS/
 gifs/
 trained_networks/
