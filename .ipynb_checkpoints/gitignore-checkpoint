@@ -3,6 +3,9 @@ junk/
 .*pdf
 .*svg
 .*png
-GAIA_ML_RUNS/
+.*gitignore
+__pycache_/_
+GAIA_ML_RUNS
 gifs/
 trained_networks/
+.ipynb_checkpoints/

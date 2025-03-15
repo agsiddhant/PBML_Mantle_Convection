@@ -385,7 +385,7 @@ class TS(nn.Module):
                 0,
             )
 
-            if self.net == "newfluidnet":
+            if self.net == "newfluidnet" or self.net == "fluidnet":
                 V = torch.clip(V, 1e-08, 1)
                 inp = torch.cat(
                     (
@@ -1384,6 +1384,315 @@ class NewFluidNet(nn.Module):
             v[:, :, 0, -1] = 0
             v[:, :, -1, 0] = 0
             v[:, :, -1, -1] = 0
+
+            return u[:, 0, ...], v[:, 0, ...], p
+
+
+
+class FluidNet(nn.Module):
+    """
+    inspired by https://proceedings.mlr.press/v70/tompson17a.html
+    A neural network for fluid simulation using convolutional layers with optional spectral convolutions,
+    multi-level feature extraction, and various activation functions.
+
+    Parameters:
+    ----------
+    levels : int
+        Number of hierarchical levels in the network.
+    c_i : int
+        Number of input channels.
+    c_h : int
+        Number of hidden channels.
+    c_o : int
+        Number of output channels.
+    device : torch.device
+        Device to run the model on (CPU or GPU).
+    act_fn : str, optional
+        Activation function to use. Options: "selu", "sine", "tanh", "elu", "silu", "relu", "gelu". Default: "selu".
+    r_p : str, optional
+        Padding mode, can be "zeros" or other padding strategies. Default: "zeros".
+    loss_type : str, optional
+        Type of loss function, either "mae" (mean absolute error), "mass", or "curl". Default: "mae".
+    use_symm : bool, optional
+        Whether to use symmetric padding. Default: False.
+    dilation : int, optional
+        Dilation rate for convolutions. Default: 1.
+    a_bound : float, optional
+        Scaling factor for the curl-based loss. Default: 4.0.
+    use_cosine : bool, optional
+        Whether to use cosine-based normalization. Default: False.
+    repeats : int, optional
+        Number of convolutional repeats per level. Default: 3.
+    use_skip : bool, optional
+        Whether to use skip connections. Default: False.
+    f : int, optional
+        Kernel size for convolutions. Default: 3.
+    p_pred : bool, optional
+        Whether to predict pressure as an output. Default: True.
+    spectral_conv : bool, optional
+        Whether to use spectral convolution layers. Default: False.
+    blurr : bool, optional
+        Whether to apply blurring to outputs. Default: False.
+    drop_rate : float, optional
+        Dropout rate for convolutional layers. Default: 0.0.
+    factor : int, optional
+        Pooling factor for downsampling. Default: 2.
+
+    Methods:
+    -------
+    forward(inputs: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]
+        Forward pass of the model. Computes velocity fields (u, v) and optionally pressure (p).
+    """
+
+    def __init__(
+        self,
+        levels: int,
+        c_i: int,
+        c_h: int,
+        c_o: int,
+        device,
+        act_fn: str = "selu",
+        r_p="zeros",
+        loss_type="mae",
+        use_symm=False,
+        dilation=1,
+        a_bound=4.0,
+        use_cosine=False,
+        repeats=3,
+        use_skip=False,
+        f=3,
+        p_pred=True,
+        spectral_conv=False,
+        blurr=False,
+        drop_rate=0.0,
+        factor=2,
+    ):
+        super().__init__()
+
+        self.conv = nn.ModuleList()
+        self.gn = nn.ModuleList()
+        self.pool = nn.ModuleList()
+        self.unpool = nn.ModuleList()
+        self.levels = levels
+        # self.device = device
+        self.loss_type = loss_type
+        self.a_bound = a_bound
+        self.use_cosine = use_cosine
+        self.repeats = repeats
+        self.use_skip = use_skip
+        self.p_pred = p_pred
+        self.c_h = c_h
+        self.c_i = c_i
+        self.c_o = c_o
+        if blurr:
+            self.blurrer = (
+                torch.Tensor([[1 / 9] * 3] * 3)
+                .double()
+                .unsqueeze(0)
+                .unsqueeze(1)
+                .to(device)
+            )
+        else:
+            self.blurrer = None
+
+        if r_p == "zeros":
+            self.r_p = "constant"
+        else:
+            self.r_p = r_p
+
+        if act_fn == "selu":
+            self.act = nn.SELU()
+        elif act_fn == "sine":
+            self.act = Sine(30.0)
+        elif act_fn == "tanh":
+            self.act = nn.Tanh()
+        elif act_fn == "elu":
+            self.act = nn.ELU()
+        elif act_fn == "silu":
+            self.act = nn.SiLU()
+        elif act_fn == "relu":
+            self.act = nn.ReLU()
+        elif act_fn == "gelu":
+            self.act = nn.GELU()
+
+        self.dx_center_kernel = (
+            torch.Tensor([-0.5, 0, 0.5])
+            .double()
+            .unsqueeze(0)
+            .unsqueeze(1)
+            .unsqueeze(2)
+            .to(device)
+        )
+        self.dy_center_kernel = (
+            torch.Tensor([-0.5, 0, 0.5])
+            .double()
+            .unsqueeze(0)
+            .unsqueeze(1)
+            .unsqueeze(3)
+            .to(device)
+        )
+
+        if spectral_conv:
+            self.conv.append(
+                SpectralFluidLayer(c_i, c_h, act_fn, r_p, use_symm, dilation, f=f)
+            )
+        else:
+            self.conv.append(
+                FluidLayer(
+                    c_i, c_h, act_fn, r_p, use_symm, dilation, f=f, drop_rate=drop_rate
+                )
+            )
+
+        xs = [128]
+        ys = [506]
+
+        self.pool = nn.AvgPool2d((factor, factor), stride=factor)
+        for l in range(1, levels):
+            self.unpool.append(
+                nn.Upsample(size=(xs[0], ys[0]), mode="bicubic")
+            )  # , align_corners=True
+
+        self.convs = nn.ModuleList()
+
+        for l in range(levels):
+            self.convs.append(nn.ModuleList())
+            for r in range(self.repeats):
+                if spectral_conv:
+                    self.convs[l].append(
+                        SpectralFluidLayer(
+                            c_h, c_h, act_fn, r_p, use_symm, dilation, f=f
+                        )
+                    )
+                else:
+                    self.convs[l].append(
+                        FluidLayer(
+                            c_h,
+                            c_h,
+                            act_fn,
+                            r_p,
+                            use_symm,
+                            dilation,
+                            f=f,
+                            drop_rate=drop_rate,
+                        )
+                    )
+
+        if self.loss_type == "curl":
+            padding = (2, 2)
+        else:
+            padding = (1, 1)
+
+        if self.r_p != "learned":
+            self.conv.append(
+                nn.Conv2d(
+                    c_h * levels + c_i,
+                    c_h,
+                    kernel_size=3,
+                    padding=padding,
+                    dilation=dilation,
+                    padding_mode=r_p,
+                    stride=1,
+                )
+            )
+        else:
+            self.conv.append(
+                BoundaryLearnedConvolution2D(
+                    c_h * levels + c_i, c_h, k=f, use_symm=use_symm
+                )
+            )
+        self.gn.append(torch.nn.GroupNorm(int(c_h / 4), c_h))
+
+        if self.r_p != "learned":
+            self.conv.append(
+                nn.Conv2d(
+                    c_h,
+                    c_h,
+                    kernel_size=3,
+                    padding=(1, 1),
+                    dilation=1,
+                    padding_mode=r_p,
+                    stride=1,
+                )
+            )
+        else:
+            self.conv.append(
+                BoundaryLearnedConvolution2D(c_h, c_h, k=f, use_symm=use_symm)
+            )
+
+        if self.r_p != "learned":
+            self.conv.append(
+                nn.Conv2d(
+                    c_h,
+                    c_o,
+                    kernel_size=3,
+                    padding=(1, 1),
+                    dilation=1,
+                    padding_mode=r_p,
+                    stride=1,
+                )
+            )
+        else:
+            self.conv.append(
+                BoundaryLearnedConvolution2D(c_h, c_o, k=f, use_symm=use_symm)
+            )
+
+    def forward(self, inputs):
+
+        x_in = self.conv[0](inputs)
+
+        for l in range(self.levels):
+            y1 = x_in
+            for _ in range(l):
+                y1 = self.pool(y1)
+            for r in range(self.repeats):
+                y1 = self.convs[l][r](y1)
+            if l > 0:
+                y1 = self.unpool[l - 1](y1)
+                y = torch.cat((y, y1), axis=1)
+            else:
+                y = y1
+
+        del x_in, y1
+        y = torch.cat((y, inputs), axis=1)
+        del inputs
+
+        if self.loss_type == "curl":
+            y = self.conv[1](y, bc_x=2,bc_y=2)
+        y = self.gn[0](y)
+        y = self.act(y)
+
+        y = self.conv[2](y)
+        y = self.act(y)
+
+        y = self.conv[3](y)
+        y = y - torch.mean(y, dim=(2, 3), keepdim=True)
+
+        if self.loss_type == "mae" or self.loss_type == "mass":
+            u = y[:, 0:1, ...]
+            v = y[:, 1:2, ...]
+            if self.p_pred:
+                p = y[:, 2:3, ...]
+            else:
+                p = None
+            del y
+
+            return u[:, 0, ...], v[:, 0, ...], p
+
+        elif self.loss_type == "curl":
+            a = y[:, 0:1, ...] * self.a_bound
+
+            if self.blurrer is not None:
+                a = F.pad(a, (1, 1, 1, 1), mode="replicate")
+                a = F.conv2d(a, self.blurrer)
+
+            if self.p_pred:
+                p = y[:, 1, ...]
+            else:
+                p = None
+            del y
+
+            u = F.conv2d(a, self.dy_center_kernel)[:, :, :, 1:-1]  # 128 x 506
+            v = -F.conv2d(a, self.dx_center_kernel)[:, :, 1:-1, :]  # 128 x 506
 
             return u[:, 0, ...], v[:, 0, ...], p
 
