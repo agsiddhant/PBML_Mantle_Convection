@@ -3,8 +3,7 @@
 This repository contains code for a physics-based surrogate model that approximates Stokes flow in mantle convection simulations using deep learning.
 
 #### Step 1: Download Data and Pretrained Model Weights 
-Download the sample datasets and pretrained model weights from the Zenodo archive: 
-📦 https://doi.org/10.5281/zenodo.15088589
+Download the sample datasets and pretrained model weights from the Zenodo archive: https://doi.org/10.5281/zenodo.15088589
 
 #### Step 2: Load a Trained Model
 After installing PyTorch, run `load_fluidnet.ipynb` to load a pretrained neural network and perform velocity predictions.
